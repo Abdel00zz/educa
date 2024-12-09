@@ -1,0 +1,16 @@
+services:
+  # Service API
+  - type: web
+    name: api
+    env: node
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # Sera configuré manuellement dans le dashboard Render
+      - key: JWT_SECRET
+        sync: false # Sera configuré manuellement dans le dashboard Render
+      - key: CORS_ORIGIN
+        value: https://votre-frontend-url.netlify.app # À mettre à jour avec votre URL Netlify

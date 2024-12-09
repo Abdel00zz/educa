@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // Utilisé pour les migrations
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL") // Optionnel, pour les migrations en développement
+}
+
+// Modèles existants
+model Quiz {
+  id          String    @id @default(uuid())
+  title       String
+  gradeLevel  String
+  subject     String
+  lesson      String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  questions   Question[]
+  createdBy   String
+  user        User      @relation(fields: [createdBy], references: [id])
+}
+
+model Question {
+  id          String    @id @default(uuid())
+  type        String    // 'truefalse', 'mcq', 'fillblank'
+  text        String
+  answer      String    // JSON string for MCQ options
+  options     String?   // JSON string for MCQ options
+  quizId      String
+  quiz        Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model Exercise {
+  id          String    @id @default(uuid())
+  gradeLevel  String
+  lesson      String
+  statement   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  problems    Problem[]
+  createdBy   String
+  user        User      @relation(fields: [createdBy], references: [id])
+}
+
+model Problem {
+  id          String    @id @default(uuid())
+  number      Int
+  text        String
+  exerciseId  String
+  exercise    Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  subProblems SubProblem[]
+}
+
+model SubProblem {
+  id          String    @id @default(uuid())
+  label       String
+  text        String
+  problemId   String
+  problem     Problem   @relation(fields: [problemId], references: [id], onDelete: Cascade)
+}
+
+// Nouveaux modèles
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  fullName      String?
+  role          Role      @default(STUDENT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  quizzes       Quiz[]
+  exercises     Exercise[]
+  enrollments   Enrollment[]
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+model Class {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  teacherId   String
+  teacher     User      @relation("ClassTeacher", fields: [teacherId], references: [id])
+  enrollments Enrollment[]
+  chapters    Chapter[]
+}
+
+model Chapter {
+  id          String    @id @default(uuid())
+  title       String
+  content     String
+  order       Int
+  classId     String
+  class       Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Enrollment {
+  id          String    @id @default(uuid())
+  userId      String
+  classId     String
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class       Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, classId])
+}
